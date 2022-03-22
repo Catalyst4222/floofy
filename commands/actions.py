@@ -1,4 +1,4 @@
-from random import randint
+from random import randint, choice
 from discord.ext import commands
 from utilities.actions_config import text_actions
 
@@ -7,13 +7,27 @@ class Actions(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(pass_context=True, aliases=["pat"])
-    async def pet(self, ctx: commands.Context, *args):
-        await self.__process_action(ctx, "pet", " ".join(args))
-
-    @commands.command(pass_context=True)
-    async def boop(self, ctx: commands.Context, *args):
-        await self.__process_action(ctx, "boop", " ".join(args))
+    @commands.Cog.listener()
+    async def on_message(self, msg):
+        raise NotImplementedError  # need to set up other files and data first
+        
+        if not msg.content.lower().startswith("f!"):
+            return
+        
+        command, *args = msg.content.split
+        action = command[2:]
+        if text_actions.get(action) is None:
+            return
+        
+        reply = choice(actions[command])
+        user = msg.author.display_name
+        receivers = self._get_receivers(' '.join(args))
+        
+        await msg.reply(reply.format(user=user, receivers=receivers)
+        
+        
+    def get_recievers(self, phrase: str) -> str:
+        raise NotImplementedError
 
     @staticmethod
     async def __process_action(ctx: commands.Context, action_name: str, args):
