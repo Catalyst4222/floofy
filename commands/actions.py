@@ -7,25 +7,27 @@ class Actions(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
-    @commands.command(pass_context=True)
-    async def pet(self, ctx: commands.Context):
-        await self.__process_action(ctx, "pet")
+    @commands.command(pass_context=True, aliases=["pat"])
+    async def pet(self, ctx: commands.Context, *args):
+        await self.__process_action(ctx, "pet", " ".join(args))
 
     @commands.command(pass_context=True)
-    async def boop(self, ctx: commands.Context):
-        await self.__process_action(ctx, "boop")
+    async def boop(self, ctx: commands.Context, *args):
+        await self.__process_action(ctx, "boop", " ".join(args))
 
     @staticmethod
-    async def __process_action(ctx: commands.Context, action_name: str):
+    async def __process_action(ctx: commands.Context, action_name: str, args):
         mentions = ctx.message.mentions
         author_name = ctx.author.nick or ctx.author.name
+        main_action = ""
 
         if len(mentions) == 0:
-            await ctx.send(f"**{author_name}** {action_name}s themselves!")
+            if len(args) == 0:
+                main_action = f"{action_name}s themselves!"
+            else:
+                receivers = f"**{args}**"
+                main_action = get_main_action(action_name, receivers)
         else:
-            action_list = text_actions[action_name]
-            ran = randint(0, len(action_list) - 1)
-
             mention_string = ""
             for (idx, men) in enumerate(mentions):
                 men_name = men.nick or men.name
@@ -37,11 +39,17 @@ class Actions(commands.Cog):
                 else:
                     mention_string += f", **{men_name}**"
 
-            current_action = action_list[ran]
-            main_action = current_action.replace("{{receivers}}", mention_string)
+            main_action = get_main_action(action_name, mention_string)
 
-            response = f"**{author_name}** {main_action}"
-            await ctx.send(response)
+        response = f"**{author_name}** {main_action}"
+        await ctx.send(response)
+
+
+def get_main_action(action_name, receivers):
+    action_list = text_actions[action_name]
+    ran = randint(0, len(action_list) - 1)
+    current_action = action_list[ran]
+    return current_action.replace("{{receivers}}", receivers)
 
 
 def setup(bot):

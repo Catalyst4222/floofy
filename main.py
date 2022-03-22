@@ -1,4 +1,3 @@
-import os
 import discord
 
 from discord.ext import commands
@@ -14,7 +13,7 @@ intents.members = True
 start = time()
 
 # Create bot instance
-bot = commands.Bot(command_prefix="f!", intents=intents)
+bot = commands.Bot(command_prefix=("f!", "F!"), intents=intents, case_insensitive=True)
 
 # List of cog extensions
 extensions = [
