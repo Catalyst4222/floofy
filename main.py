@@ -1,44 +1,38 @@
-import discord
-
-from discord.ext import commands
+import asyncio
 from time import time
-from utilities.global_config import token
+
+from dis_snek import Intents, Snake, listen
+
 from utilities.actions_config import load_actions
+from utilities.global_config import token
 
 # Define bot intents
-intents = discord.Intents.default()
-intents.members = True
+intents = Intents.DEFAULT | Intents.GUILD_MEMBERS
 
 # Calculate start time
 start = time()
 
 # Create bot instance
-bot = commands.Bot(command_prefix=("f!", "F!"), intents=intents, case_insensitive=True)
+bot = Snake(default_prefix=("f!", "F!"), intents=intents)
 
 # List of cog extensions
-extensions = [
-    "commands.actions"
-]
+extensions = ["commands.actions"]
 
 # List of action text files
-action_text_files = [
-    "pet",
-    "boop"
-]
+action_text_files = ["pet", "boop"]
 
 
-@bot.event
-async def on_ready():
+@listen()
+async def on_startup():
     op_time = round((time() - start), 2)
 
     print(f"Floofy is ready to serve! (Operation took {op_time} seconds)")
     print(f"Currently logged in as {bot.user} (ID: {bot.user.id})")
     print(f"Current ping to Discord is {round(bot.latency * 1000, 2)}ms")
+    await bot.change_presence(activity="Currently under development!")
 
-    await bot.change_presence(activity=discord.Game(name="Currently under development!"))
 
-
-if __name__ == '__main__':
+if __name__ == "__main__":
     load_actions(action_text_files)
 
     # Load command extension files
@@ -49,4 +43,4 @@ if __name__ == '__main__':
         except Exception as error:
             print(f"{extension} could not be loaded. Stack:\n{error}")
 
-    bot.run(token)
+    bot.start(token)

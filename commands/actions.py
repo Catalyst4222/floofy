@@ -2,20 +2,21 @@ import re
 from random import choice, randint
 from typing import Optional
 
-from discord import Guild, Member, Message
-from discord.ext import commands
+from dis_snek import Member, Message, Scale, Snake, listen
+from dis_snek.api.events import MessageCreate
 
 from static.action_texts import actions
 
 MENTION_REGEX = re.compile(r"(<@!?(\d{17,19})>)")
 
 
-class Actions(commands.Cog):
+class Actions(Scale):
     def __init__(self, bot):
-        self.bot: commands.Bot = bot
+        self.bot: Snake = bot
 
-    @commands.Cog.listener()
-    async def on_message(self, msg: Message):
+    @listen()
+    async def on_message_create(self, event: MessageCreate):
+        msg = event.message
 
         if not msg.content.lower().startswith("f!"):
             return
@@ -36,12 +37,12 @@ class Actions(commands.Cog):
 
     @staticmethod
     def _get_receivers(msg: Message, phrase: str) -> Optional[str]:
-        # made in a way to easily convert to snek
         if not phrase:
-            if msg.reference and isinstance(msg.reference.resolved, Message):
-                return f"**{msg.reference.resolved.author.display_name}**"
-            else:
+            if not msg.message_reference:
                 return None
+
+            reply = msg.channel.get_message(msg.message_reference.message_id)
+            return f"**{reply.author.display_name}**"
 
         mentions = re.findall(MENTION_REGEX, phrase)
 
@@ -65,7 +66,7 @@ class Actions(commands.Cog):
         return mention_string
 
     @staticmethod
-    async def __process_action(ctx: commands.Context, action_name: str, args):
+    async def __process_action(ctx, action_name: str, args):
         mentions = ctx.message.mentions
         author_name = ctx.author.nick or ctx.author.name
         main_action = ""
@@ -102,4 +103,4 @@ def get_main_action(action_name, receivers):
 
 
 def setup(bot):
-    bot.add_cog(Actions(bot))
+    Actions(bot)
