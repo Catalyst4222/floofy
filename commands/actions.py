@@ -1,33 +1,68 @@
-from random import randint, choice
+import re
+from random import choice, randint
+from typing import Optional
+
+from discord import Guild, Member, Message
 from discord.ext import commands
-from utilities.actions_config import text_actions
+
+from static.action_texts import actions
+
+MENTION_REGEX = re.compile(r"(<@!?(\d{17,19})>)")
 
 
 class Actions(commands.Cog):
     def __init__(self, bot):
-        self.bot = bot
+        self.bot: commands.Bot = bot
 
     @commands.Cog.listener()
-    async def on_message(self, msg):
-        raise NotImplementedError  # need to set up other files and data first
-        
+    async def on_message(self, msg: Message):
+
         if not msg.content.lower().startswith("f!"):
             return
-        
-        command, *args = msg.content.split
+
+        command, *args = msg.content.split()
         action = command[2:]
-        if text_actions.get(action) is None:
+        if actions.get(action) is None:
             return
-        
-        reply = choice(actions[command])
+
         user = msg.author.display_name
-        receivers = self._get_receivers(' '.join(args))
-        
-        await msg.reply(reply.format(user=user, receivers=receivers)
-        
-        
-    def get_recievers(self, phrase: str) -> str:
-        raise NotImplementedError
+        receivers = self._get_receivers(msg, " ".join(args))
+
+        if receivers is None:
+            return await msg.channel.send(f"**{user}** {action}s themself!")
+
+        reply = choice(actions[action])
+        await msg.channel.send(reply.format(user=user, receivers=receivers))
+
+    @staticmethod
+    def _get_receivers(msg: Message, phrase: str) -> Optional[str]:
+        # made in a way to easily convert to snek
+        if not phrase:
+            if msg.reference and isinstance(msg.reference.resolved, Message):
+                return f"**{msg.reference.resolved.author.display_name}**"
+            else:
+                return None
+
+        mentions = re.findall(MENTION_REGEX, phrase)
+
+        if not mentions:
+            return phrase
+
+        # transform to Member objects
+        mentions: list[Member] = [msg.guild.get_member(int(id)) for _, id in mentions]
+
+        mention_string = ""
+        for (idx, men) in enumerate(mentions):
+            men_name = men.display_name
+
+            if idx == 0:
+                mention_string += f"**{men_name}**"
+            elif idx == len(mentions) - 1:
+                mention_string += f" and **{men_name}**"
+            else:
+                mention_string += f", **{men_name}**"
+
+        return mention_string
 
     @staticmethod
     async def __process_action(ctx: commands.Context, action_name: str, args):
